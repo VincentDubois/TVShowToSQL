@@ -9,9 +9,29 @@ import Col from 'react-bootstrap/Col'
 import Row from 'react-bootstrap/Row'
 import Card from 'react-bootstrap/Card'
 import Badge from 'react-bootstrap/Badge'
+import Image from 'react-bootstrap/Image'
 
 
 import './App.css';
+
+class TVShowMini extends Component {
+  render() {
+    const onClick = ()=>this.props.onClick(this.props.show);
+    return (
+      <Row>
+        <Col sm="4">
+          <Image src={this.props.show.image.medium} rounded fluid />
+        </Col>
+        <Col sm="8">
+          <h3>{this.props.show.name}</h3>
+          <Button variant="secondary" onClick={onClick} size="lg">
+            Ajouter
+          </Button>
+        </Col>
+      </Row>
+    )
+  }
+}
 
 class TVShow extends Component {
   render() {
@@ -21,9 +41,7 @@ class TVShow extends Component {
     <Card.Img variant="top" src={this.props.show.image.medium} />
     <Card.Body>
       <Card.Title>{this.props.show.name}</Card.Title>
-      <Card.Text>
-<div dangerouslySetInnerHTML={{__html: this.props.show.summary}} />
-      </Card.Text>
+      <Card.Text dangerouslySetInnerHTML={{__html: this.props.show.summary}} />
     </Card.Body>
   </Card>
   );
@@ -39,7 +57,9 @@ class TVShowListTabbed extends Component {
       <ListGroup>{this.props.list.map((element) =>
         <ListGroup.Item
           key={element.show.id.toString()} action
-          href={"#"+element.show.id.toString()}>{element.show.name}</ListGroup.Item>)}
+          href={"#"+element.show.id.toString()}>
+            <TVShowMini show={element.show} onClick={this.props.onClick}/>
+        </ListGroup.Item>)}
       </ListGroup>
     </Col>
     <Col sm={6}>
@@ -61,8 +81,11 @@ class TVShowList extends Component {
     if (this.props.list){
       return (
         <ListGroup>{this.props.list.map((element) =>
-          <ListGroup.Item key={element.show.id.toString()} action>{element.show.name}</ListGroup.Item>)}
-        </ListGroup>);
+          <ListGroup.Item key={element.show.id.toString()} action
+                          href={"#"+element.show.id.toString()}>
+            <TVShowMini show={element.show} onClick = {this.props.onClick}/>
+          </ListGroup.Item>)}
+        </ListGroup>)
     } else {
       return (<div>Pas de résultat</div>);
     }
@@ -76,6 +99,8 @@ class TVShowQuery extends Component {
 
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
+    this.handleRemoveShow = this.handleRemoveShow.bind(this);
+    this.handleAddShow = this.handleAddShow.bind(this);
   }
 
   handleSubmit(event) {
@@ -91,6 +116,16 @@ class TVShowQuery extends Component {
     this.setState({query: event.target.value});
   }
 
+  handleRemoveShow(show) {
+    this.setState({selection: this.state.selection.filter((elt) => (elt.show.id !== show.id))});
+  }
+
+  handleAddShow(show) {
+    this.setState({selection: this.state.selection.concat([{show: show}]),
+                   found: this.state.found.filter((elt) => (elt.show.id !== show.id))}
+                );
+  }
+
   render() {
     const found = this.state.found;
 
@@ -103,7 +138,7 @@ class TVShowQuery extends Component {
         <Button variant="primary" block disabled={this.state.selection.length === 0}>
           Exporter la sélection en SQL <Badge variant="light">{this.state.selection.length} séries</Badge>
         </Button>
-      <TVShowList list={this.state.selection}/>
+      <TVShowList list={this.state.selection} onClick={this.handleRemoveShow}/>
     </Col>
     <Col sm={8}>
       <Form onSubmit={this.handleSubmit}  >
@@ -119,7 +154,7 @@ class TVShowQuery extends Component {
         </InputGroup.Append>
         </InputGroup>
       </Form>
-      <TVShowListTabbed list={found}/>
+      <TVShowListTabbed list={found} onClick={this.handleAddShow}/>
     </Col>
   </Row>
 </Container>
