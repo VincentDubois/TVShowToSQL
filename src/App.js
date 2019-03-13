@@ -17,11 +17,14 @@ import './App.css';
 class TVShowMini extends Component {
   render() {
     const onClick = ()=>this.props.onClick(this.props.show);
+    const image = this.props.show.image ? (
+      <Col sm="4">
+        <Image src={this.props.show.image.medium} rounded fluid />
+      </Col>
+    ) : (<Col sm="4"></Col>);
     return (
       <Row>
-        <Col sm="4">
-          <Image src={this.props.show.image.medium} rounded fluid />
-        </Col>
+        {image}
         <Col sm="8">
           <h3>{this.props.show.name}</h3>
           <Button variant="secondary" onClick={onClick} size="lg">
@@ -38,7 +41,9 @@ class TVShow extends Component {
     return (
     <Card bg="secondary" text="white" >
     <Card.Header><Card.Title>{this.props.show.name}</Card.Title></Card.Header>
-    <Card.Img variant="top" src={this.props.show.image.medium} />
+{this.props.show.image?    <Card.Img variant="top" src={this.props.show.image.medium} />
+  : <Card.Text>Pas d image</Card.Text>
+}
     <Card.Body>
       <Card.Text dangerouslySetInnerHTML={{__html: this.props.show.summary}} />
     </Card.Body>
@@ -138,12 +143,19 @@ class TVShowQuery extends Component {
 //  image
 //    medium
 //    original
+
+  addQuotesIfRequired(s){
+    s = String(s);
+    if (s=="null") return s;
+    return "\""+s+"\"";
+  }
+
   showToNuple(elt){
     const show = elt.show;
+    const img = show.image ? show.image.medium : "null";
     const t = [show.id,show.name,show.summary,show.language,
-        show.rating.average,show.premiered,show.status,
-        show.url,show.image.medium];
-    return "INSERT INTO serie VALUES ("+t.map((x)=>"\""+String(x)+"\"").join()+");\n";
+        show.rating.average,show.premiered,show.status,show.url,img];
+    return "INSERT INTO serie VALUES ("+t.map(this.addQuotesIfRequired).join()+");\n";
   }
 
 
