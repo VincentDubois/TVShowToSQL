@@ -37,10 +37,9 @@ class TVShow extends Component {
   render() {
     return (
     <Card bg="secondary" text="white" >
-    <Card.Header><Button variant="primary" block>Ajouter à la sélection</Button></Card.Header>
+    <Card.Header><Card.Title>{this.props.show.name}</Card.Title></Card.Header>
     <Card.Img variant="top" src={this.props.show.image.medium} />
     <Card.Body>
-      <Card.Title>{this.props.show.name}</Card.Title>
       <Card.Text dangerouslySetInnerHTML={{__html: this.props.show.summary}} />
     </Card.Body>
   </Card>
@@ -101,6 +100,7 @@ class TVShowQuery extends Component {
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleRemoveShow = this.handleRemoveShow.bind(this);
     this.handleAddShow = this.handleAddShow.bind(this);
+    this.downloadSQLFile = this.downloadSQLFile.bind(this);
   }
 
   handleSubmit(event) {
@@ -125,17 +125,50 @@ class TVShowQuery extends Component {
                    found: this.state.found.filter((elt) => (elt.show.id !== show.id))}
                 );
   }
+// show  :
+//  id
+//  name
+//  summary
+//  genres (array)
+//  language
+//  premiered
+//  rating.average
+//  status
+//  url
+//  image
+//    medium
+//    original
+  showToNuple(elt){
+    const show = elt.show;
+    const t = [show.id,show.name,show.summary,show.language,
+        show.rating.average,show.premiered,show.status,
+        show.url,show.image.medium];
+    return "INSERT INTO serie VALUES ("+t.map((x)=>"\""+String(x)+"\"").join()+");\n";
+  }
+
+
+  downloadSQLFile() {
+      var result = "CREATE TABLE serie... \n";
+      for (let i=0; i<this.state.selection.length; i++) {
+          result += this.showToNuple(this.state.selection[i]);
+      }
+      const element = document.createElement("a");
+      const file = new Blob([result], {type: 'text/plain'});
+      element.href = URL.createObjectURL(file);
+      element.download = "tvshows.sql";
+      document.body.appendChild(element); // Required for this to work in FireFox
+      element.click();
+    }
 
   render() {
     const found = this.state.found;
-
-
     return (
 <Container>
   <h2>Extracteur de données sur les séries</h2>
   <Row>
     <Col sm={4}>
-        <Button variant="primary" block disabled={this.state.selection.length === 0}>
+        <Button variant="primary" block disabled={this.state.selection.length === 0}
+          onClick={this.downloadSQLFile}>
           Exporter la sélection en SQL <Badge variant="light">{this.state.selection.length} séries</Badge>
         </Button>
       <TVShowList list={this.state.selection} onClick={this.handleRemoveShow}/>
