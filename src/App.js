@@ -146,7 +146,7 @@ class TVShowQuery extends Component {
 
   addQuotesIfRequired(s){
     s = String(s);
-    if (s=="null") return s;
+    if (s==="null") return s;
     return "\""+s+"\"";
   }
 
@@ -160,7 +160,18 @@ class TVShowQuery extends Component {
 
 
   downloadSQLFile() {
-      var result = "CREATE TABLE serie... \n";
+      var result = "CREATE TABLE IF NOT EXISTS `serie` (\n"+
+  "`id` int(11) NOT NULL,\n"+
+  "`nom` varchar(255) NOT NULL,\n"+
+  "`resume` text,\n"+
+  "`langue` varchar(255),\n"+
+  "`note` decimal(4,2),\n"+
+  "`sortie` date,\n"+
+  "`statut` varchar(64),\n"+
+  "`url` varchar(255) NOT NULL,\n"+
+  "`urlImage` varchar(255),\n"+
+  "PRIMARY KEY (`id`)\n"+
+  ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4; \n";
       for (let i=0; i<this.state.selection.length; i++) {
           result += this.showToNuple(this.state.selection[i]);
       }
