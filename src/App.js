@@ -61,9 +61,10 @@ class Table {
     return "INSERT INTO "+this.name+" VALUES ("+t.join()+");\n";
   }
 
-  generateAllInsert(){
+  generateAllInsert(subset = null){
     var result = "";
-    this.keys.forEach((key)=>{result += this.generateInsert(this.data[key])});
+    if (subset == null) subset = this.keys;
+    subset.forEach((key)=>{result += this.generateInsert(this.data[key])});
     return result;
   }
 
@@ -247,7 +248,7 @@ class TVShowQuery extends Component {
     result+=this.personnage.generateCreateStatement();
 
     console.log(this.serie);
-    result += this.serie.generateAllInsert();
+    result += this.serie.generateAllInsert(this.state.selection);
 
     console.log(this.personne);
     result+=this.personne.generateAllInsert();
