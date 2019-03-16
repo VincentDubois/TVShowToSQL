@@ -18,7 +18,7 @@ class Field {
   constructor(name,type,key){
     this.name = name;
     this.type = type;
-    this.key = key.split(".");
+    this.key = key.split("."); // handle inner properties s.a. "image.medium"
     this.quote = !this.type.startsWith("int") && !this.type.startsWith("dec");
   }
 
@@ -29,8 +29,10 @@ class Field {
         if (result === null || typeof result === 'undefined') return "null";
     }
 
-    if (this.quote) return "\""+String(result)+"\"";
-    return String(result);
+    result = String(result);
+    result = result.split("\"").join("\\\"");
+    if (this.quote) return "\""+result+"\"";
+    return result;
   }
 }
 
@@ -70,11 +72,10 @@ class Table {
     this.fields.forEach(field=>{
       result += "`"+field.name+"` "+field.type+",\n";
     });
-    result += "PRIMARY KEY (`id`)\n";
+    result += "PRIMARY KEY (`id`)\n"; // TODO will not work for all tables...
     result += ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n";
   return result;
   }
-
 }
 
 class TVShowMini extends Component {
@@ -206,7 +207,6 @@ class TVShowQuery extends Component {
         }
         this.setState({found : result})
       });
-    //alert('A name was submitted: ' + this.state.query);
     event.preventDefault();
   }
 
@@ -219,7 +219,6 @@ class TVShowQuery extends Component {
   }
 
   handleAddShow(show) {
-//    show.cast="Pending...";
     fetch(`http://api.tvmaze.com/shows/`+show.id+`/cast`)
       .then(result=>result.json())
       .then((result)=>{
@@ -229,30 +228,12 @@ class TVShowQuery extends Component {
           this.personne.add(result[i].person);
           this.personnage.add(result[i].character);
         }
-//        showElement.show.cast=result
-//        console.log(JSON.stringify(showElement));
-//        console.log(showElement.show.cast.length);
         this.setState((oldState) => { return {
                       selection: oldState.selection.concat([showElement]),
                       found: oldState.found.filter((elt) => (elt.show.id !== show.id))
-                    }
-                    });
-
+                    }});
       });
   }
-// show  :
-//  id
-//  name
-//  summary
-//  genres (array)
-//  language
-//  premiered
-//  rating.average
-//  status
-//  url
-//  image
-//    medium
-//    original
 
   addQuotesIfRequired(s){
     s = String(s);
@@ -262,26 +243,20 @@ class TVShowQuery extends Component {
 
   downloadSQLFile() {
 
-    console.log(this.serie);
     var result = this.serie.generateCreateStatement();
+    result+=this.personne.generateCreateStatement();
+    result+=this.personnage.generateCreateStatement();
+
+    console.log(this.serie);
     result += this.serie.generateAllInsert();
-//      var personne = new Table();
-/*      const selection = this.state.selection;
-      for (let i=0; i<selection.length; i++) {
-          result += this.showToNuple(selection[i]);
-          const tmp = selection[i];
-          console.log(tmp);
-          if (Array.isArray(tmp.cast)){
-            for(let j = 0; j<tmp.cast.length; j++){
-              personne.add(tmp.cast[j]);
-            }
-          }
-      }*/
 
-      console.log(this.personne);
-      result+=this.personne.generateAllInsert();
+    console.log(this.personne);
+    result+=this.personne.generateAllInsert();
 
-      console.log(result);
+    console.log(this.personnage);
+    result+=this.personnage.generateAllInsert();
+
+    console.log(result);
 
 /*      const element = document.createElement("a");
       const file = new Blob([result], {type: 'text/plain'});
