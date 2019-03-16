@@ -14,6 +14,69 @@ import Image from 'react-bootstrap/Image'
 
 import './App.css';
 
+class Field {
+  constructor(name,type,key){
+    this.name = name;
+    this.type = type;
+    this.key = key.split(".");
+    this.quote = !this.type.startsWith("int") && !this.type.startsWith("dec");
+  }
+
+  getValue(line){
+    let result = line;
+    for(let i= 0; i < this.key.length; ++i){
+        result = result[this.key[i]];
+        if (result === null || typeof result === 'undefined') return "null";
+    }
+
+    if (this.quote) return "\""+String(result)+"\"";
+    return String(result);
+  }
+}
+
+class Table {
+  constructor(name){
+    this.keys = [];
+    this.name = name;
+    this.data = {};
+    this.fields = [];
+  }
+
+  addField(field){
+    this.fields.push(field);
+  }
+
+  add(data){
+    if (!this.keys.includes(data.id)) {
+      this.data[data.id]=data;
+      this.keys.push(data.id);
+    }
+  }
+
+
+  generateInsert(elt){
+    const t = this.fields.map((field)=>field.getValue(elt));
+    return "INSERT INTO "+this.name+" VALUES ("+t.join()+");\n";
+  }
+
+  generateAllInsert(){
+    var result = "";
+    this.keys.forEach((key)=>{result += this.generateInsert(this.data[key])});
+    return result;
+  }
+
+  generateCreateStatement(){
+    var result = "CREATE TABLE IF NOT EXISTS "+this.name+" (\n";
+    this.fields.forEach(field=>{
+      result += "`"+field.name+"` "+field.type+",\n";
+    });
+    result += "PRIMARY KEY (`id`)\n";
+    result += ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n";
+  return result;
+  }
+
+}
+
 class TVShowMini extends Component {
   render() {
     const onClick = ()=>this.props.onClick(this.props.show);
@@ -99,7 +162,32 @@ class TVShowList extends Component {
 class TVShowQuery extends Component {
   constructor(props) {
     super(props);
-    this.state = {query: '', found : null, selection : []};
+    this.state = {query: '', found: null, selection: []};
+
+    this.serie =  new Table("serie");
+    this.serie.addField(new Field("id","int(11) NOT NULL","id"));
+    this.serie.addField(new Field("nom","varchar(255) NOT NULL","name"));
+    this.serie.addField(new Field("resume","text","summary"));
+    this.serie.addField(new Field("langue","varchar(255)","language"));
+    this.serie.addField(new Field("note","decimal(4,2)","rating.average"));
+    this.serie.addField(new Field("statut","varchar(64)","status"));
+    this.serie.addField(new Field("premiere","date","premiered"));
+    this.serie.addField(new Field("url","varchar(255)","url"));
+    this.serie.addField(new Field("urlImage","varchar(255)","image.medium"));
+
+    this.personnage = new Table("personnage");
+    this.personnage.addField(new Field("id","int(11) NOT NULL","id"));
+    this.personnage.addField(new Field("nom","varchar(255) NOT NULL","name"));
+    this.personnage.addField(new Field("urlImage","varchar(255)","image.medium"));
+
+    this.personne = new Table("personne");
+    this.personne.addField(new Field("id","int(11) NOT NULL","id"));
+    this.personne.addField(new Field("nom","varchar(255) NOT NULL","name"));
+    this.personne.addField(new Field("urlImage","varchar(255)","image.medium"));
+    this.personne.addField(new Field("naissance","date","birthday"));
+    this.personne.addField(new Field("mort","date","deathday"));
+    this.personne.addField(new Field("pays","varchar(255)","country.name"));
+
 
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
@@ -112,7 +200,12 @@ class TVShowQuery extends Component {
 
     fetch(`http://api.tvmaze.com/search/shows?q=`+this.state.query)
       .then(result=>result.json())
-      .then((result)=>this.setState({found : result}));
+      .then((result)=>{
+        for(let line in result) {
+          this.serie.add(result[line].show);
+        }
+        this.setState({found : result})
+      });
     //alert('A name was submitted: ' + this.state.query);
     event.preventDefault();
   }
@@ -126,9 +219,26 @@ class TVShowQuery extends Component {
   }
 
   handleAddShow(show) {
-    this.setState({selection: this.state.selection.concat([{show: show}]),
-                   found: this.state.found.filter((elt) => (elt.show.id !== show.id))}
-                );
+//    show.cast="Pending...";
+    fetch(`http://api.tvmaze.com/shows/`+show.id+`/cast`)
+      .then(result=>result.json())
+      .then((result)=>{
+        const showElement = {show: Object.assign({cast: result}, show)};
+
+        for(var i = 0; i< result.length;++i){
+          this.personne.add(result[i].person);
+          this.personnage.add(result[i].character);
+        }
+//        showElement.show.cast=result
+//        console.log(JSON.stringify(showElement));
+//        console.log(showElement.show.cast.length);
+        this.setState((oldState) => { return {
+                      selection: oldState.selection.concat([showElement]),
+                      found: oldState.found.filter((elt) => (elt.show.id !== show.id))
+                    }
+                    });
+
+      });
   }
 // show  :
 //  id
@@ -150,37 +260,35 @@ class TVShowQuery extends Component {
     return "\""+s+"\"";
   }
 
-  showToNuple(elt){
-    const show = elt.show;
-    const img = show.image ? show.image.medium : "null";
-    const t = [show.id,show.name,show.summary,show.language,
-        show.rating.average,show.premiered,show.status,show.url,img];
-    return "INSERT INTO serie VALUES ("+t.map(this.addQuotesIfRequired).join()+");\n";
-  }
-
-
   downloadSQLFile() {
-      var result = "CREATE TABLE IF NOT EXISTS `serie` (\n"+
-  "`id` int(11) NOT NULL,\n"+
-  "`nom` varchar(255) NOT NULL,\n"+
-  "`resume` text,\n"+
-  "`langue` varchar(255),\n"+
-  "`note` decimal(4,2),\n"+
-  "`sortie` date,\n"+
-  "`statut` varchar(64),\n"+
-  "`url` varchar(255) NOT NULL,\n"+
-  "`urlImage` varchar(255),\n"+
-  "PRIMARY KEY (`id`)\n"+
-  ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4; \n";
-      for (let i=0; i<this.state.selection.length; i++) {
-          result += this.showToNuple(this.state.selection[i]);
-      }
-      const element = document.createElement("a");
+
+    console.log(this.serie);
+    var result = this.serie.generateCreateStatement();
+    result += this.serie.generateAllInsert();
+//      var personne = new Table();
+/*      const selection = this.state.selection;
+      for (let i=0; i<selection.length; i++) {
+          result += this.showToNuple(selection[i]);
+          const tmp = selection[i];
+          console.log(tmp);
+          if (Array.isArray(tmp.cast)){
+            for(let j = 0; j<tmp.cast.length; j++){
+              personne.add(tmp.cast[j]);
+            }
+          }
+      }*/
+
+      console.log(this.personne);
+      result+=this.personne.generateAllInsert();
+
+      console.log(result);
+
+/*      const element = document.createElement("a");
       const file = new Blob([result], {type: 'text/plain'});
       element.href = URL.createObjectURL(file);
       element.download = "tvshows.sql";
       document.body.appendChild(element); // Required for this to work in FireFox
-      element.click();
+      element.click();*/
     }
 
   render() {
