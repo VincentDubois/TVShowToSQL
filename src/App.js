@@ -122,18 +122,18 @@ class TVShowListTabbed extends Component {
 <Tab.Container>
   <Row>
     <Col sm={6} >
-      <ListGroup>{this.props.list.map((element) =>
+      <ListGroup>{this.props.list.map((id) =>
         <ListGroup.Item
-          key={element.show.id.toString()} action
-          href={"#"+element.show.id.toString()}>
-            <TVShowMini show={element.show} onClick={this.props.onClick}/>
+          key={id.toString()} action
+          href={"#"+id.toString()}>
+            <TVShowMini show={this.props.table.data[id]} onClick={this.props.onClick}/>
         </ListGroup.Item>)}
       </ListGroup>
     </Col>
     <Col sm={6}>
-      <Tab.Content>{this.props.list.map((element) =>
-        <Tab.Pane eventKey={"#"+element.show.id.toString()}>
-          <TVShow show={element.show}/>
+      <Tab.Content>{this.props.table.keys.map((id) =>
+        <Tab.Pane eventKey={"#"+id.toString()} key={id.toString()}>
+          <TVShow show={this.props.table.data[id]}/>
         </Tab.Pane>)}
       </Tab.Content>
     </Col>
@@ -148,10 +148,10 @@ class TVShowList extends Component {
   render(){
     if (this.props.list){
       return (
-        <ListGroup>{this.props.list.map((element) =>
-          <ListGroup.Item key={element.show.id.toString()} action
-                          href={"#"+element.show.id.toString()}>
-            <TVShowMini show={element.show} onClick = {this.props.onClick}/>
+        <ListGroup>{this.props.list.map((id) =>
+          <ListGroup.Item key={id.toString()} action
+                          href={"#"+id.toString()}>
+            <TVShowMini show={this.props.table.data[id]} onClick = {this.props.onClick}/>
           </ListGroup.Item>)}
         </ListGroup>)
     } else {
@@ -205,7 +205,7 @@ class TVShowQuery extends Component {
         for(let line in result) {
           this.serie.add(result[line].show);
         }
-        this.setState({found : result})
+        this.setState({found : result.map(line=>line.show.id)});
       });
     event.preventDefault();
   }
@@ -215,22 +215,21 @@ class TVShowQuery extends Component {
   }
 
   handleRemoveShow(show) {
-    this.setState({selection: this.state.selection.filter((elt) => (elt.show.id !== show.id))});
+    this.setState({selection: this.state.selection.filter((elt) => (elt !== show.id))});
   }
 
   handleAddShow(show) {
-    fetch(`http://api.tvmaze.com/shows/`+show.id+`/cast`)
+    const id = show.id;
+    fetch(`http://api.tvmaze.com/shows/`+id+`/cast`)
       .then(result=>result.json())
       .then((result)=>{
-        const showElement = {show: Object.assign({cast: result}, show)};
-
         for(var i = 0; i< result.length;++i){
           this.personne.add(result[i].person);
           this.personnage.add(result[i].character);
         }
         this.setState((oldState) => { return {
-                      selection: oldState.selection.concat([showElement]),
-                      found: oldState.found.filter((elt) => (elt.show.id !== show.id))
+                      selection: oldState.selection.concat([id]),
+                      found: oldState.found.filter((elt) => (elt !== id))
                     }});
       });
   }
@@ -277,7 +276,7 @@ class TVShowQuery extends Component {
           onClick={this.downloadSQLFile}>
           Exporter la sélection en SQL <Badge variant="light">{this.state.selection.length} séries</Badge>
         </Button>
-      <TVShowList list={this.state.selection} onClick={this.handleRemoveShow}/>
+      <TVShowList list={this.state.selection} table={this.serie} onClick={this.handleRemoveShow}/>
     </Col>
     <Col sm={8}>
       <Form onSubmit={this.handleSubmit}  >
@@ -293,7 +292,7 @@ class TVShowQuery extends Component {
         </InputGroup.Append>
         </InputGroup>
       </Form>
-      <TVShowListTabbed list={found} onClick={this.handleAddShow}/>
+      <TVShowListTabbed list={found} table={this.serie} onClick={this.handleAddShow}/>
     </Col>
   </Row>
 </Container>
