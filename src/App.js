@@ -42,10 +42,15 @@ class Table {
     this.name = name;
     this.data = {};
     this.fields = [];
+    this.key="`id`";
   }
 
   addField(field){
     this.fields.push(field);
+  }
+
+  setKey(key){
+    this.key = key;
   }
 
   add(data){
@@ -73,8 +78,8 @@ class Table {
     this.fields.forEach(field=>{
       result += "`"+field.name+"` "+field.type+",\n";
     });
-    result += "PRIMARY KEY (`id`)\n"; // TODO will not work for all tables...
-    result += ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n";
+    result += "PRIMARY KEY ("+this.key+")\n";
+    result += ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n";
   return result;
   }
 }
@@ -190,6 +195,12 @@ class TVShowQuery extends Component {
     this.personne.addField(new Field("mort","date","deathday"));
     this.personne.addField(new Field("pays","varchar(255)","country.name"));
 
+    this.jouer = new Table("jouer");
+    this.jouer.addField(new Field("idSerie","int(11) NOT NULL","idSerie"));
+    this.jouer.addField(new Field("idPersonnage","int(11) NOT NULL","idPersonnage"));
+    this.jouer.addField(new Field("idPersonne","int(11) NOT NULL","idPersonne"));
+    this.jouer.setKey("`idSerie`,`idPersonnage`,`idPersonne`");
+
 
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
@@ -227,6 +238,13 @@ class TVShowQuery extends Component {
         for(var i = 0; i< result.length;++i){
           this.personne.add(result[i].person);
           this.personnage.add(result[i].character);
+
+          const personneId = result[i].person.id;
+          const personnageId = result[i].character.id;
+          this.jouer.add({id:id+"/"+personneId+"/"+personnageId,
+            idSerie:id,
+            idPersonnage:personnageId,
+            idPersonne:personneId});
         }
         this.setState((oldState) => { return {
                       selection: oldState.selection.concat([id]),
@@ -235,35 +253,26 @@ class TVShowQuery extends Component {
       });
   }
 
-  addQuotesIfRequired(s){
-    s = String(s);
-    if (s==="null") return s;
-    return "\""+s+"\"";
-  }
-
   downloadSQLFile() {
 
     var result = this.serie.generateCreateStatement();
     result+=this.personne.generateCreateStatement();
     result+=this.personnage.generateCreateStatement();
+    result+=this.jouer.generateCreateStatement();
 
-    console.log(this.serie);
-    result += this.serie.generateAllInsert(this.state.selection);
-
-    console.log(this.personne);
+    result+=this.serie.generateAllInsert(this.state.selection);
     result+=this.personne.generateAllInsert();
-
-    console.log(this.personnage);
     result+=this.personnage.generateAllInsert();
+    result+=this.jouer.generateAllInsert();
 
     console.log(result);
 
-/*      const element = document.createElement("a");
+      const element = document.createElement("a");
       const file = new Blob([result], {type: 'text/plain'});
       element.href = URL.createObjectURL(file);
       element.download = "tvshows.sql";
       document.body.appendChild(element); // Required for this to work in FireFox
-      element.click();*/
+      element.click();
     }
 
   render() {
