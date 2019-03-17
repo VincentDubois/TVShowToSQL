@@ -12,7 +12,7 @@ import Image from 'react-bootstrap/Image'
 import Navbar from 'react-bootstrap/Navbar'
 import Nav from 'react-bootstrap/Nav'
 
-
+import logo from './logo.svg';
 import './App.css';
 
 class Field {
@@ -248,7 +248,7 @@ class TVShowQuery extends Component {
           this.episode.add(episodes[i]);
         }
         this.setState((oldState) => { return {
-                      selection: oldState.selection.concat([id]),
+                      selection: [id].concat(oldState.selection),
                       found: oldState.found.filter((elt) => (elt !== id))
                     }});
       });
@@ -288,7 +288,10 @@ class TVShowQuery extends Component {
   <Tab.Container>
 
   <Navbar bg="dark" variant="dark">
-    <Navbar.Brand href="#home">Series2SQL</Navbar.Brand>
+    <Navbar.Brand href="#home">
+    <img src={logo} width="45" height="45" className="d-inline-block align-top"
+          alt="Serie2SQL"/>
+    </Navbar.Brand>
     <Nav className="mr-auto">
       <Nav.Link href="https://www.tvmaze.com/api">Données : TVMaze API</Nav.Link>
       <Button variant="outline-info" disabled={this.state.selection.length === 0}
