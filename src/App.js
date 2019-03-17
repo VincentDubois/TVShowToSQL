@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
 import Form from 'react-bootstrap/Form';
+import FormControl from 'react-bootstrap/FormControl';
 import Button from 'react-bootstrap/Button';
 import Container from 'react-bootstrap/Container'
-import InputGroup from 'react-bootstrap/InputGroup'
 import ListGroup from 'react-bootstrap/ListGroup'
 import Tab from 'react-bootstrap/Tab'
 import Col from 'react-bootstrap/Col'
@@ -10,6 +10,8 @@ import Row from 'react-bootstrap/Row'
 import Card from 'react-bootstrap/Card'
 import Badge from 'react-bootstrap/Badge'
 import Image from 'react-bootstrap/Image'
+import Navbar from 'react-bootstrap/Navbar'
+import Nav from 'react-bootstrap/Nav'
 
 
 import './App.css';
@@ -95,7 +97,7 @@ class TVShowMini extends Component {
       <Row>
         {image}
         <Col sm="8">
-          <h3>{this.props.show.name}</h3>
+          <h4>{this.props.show.name}</h4>
           {this.props.children}
         </Col>
       </Row>
@@ -207,7 +209,7 @@ class TVShowQuery extends Component {
 
   handleSubmit(event) {
 
-    fetch(`http://api.tvmaze.com/search/shows?q=`+this.state.query)
+    fetch(`https://api.tvmaze.com/search/shows?q=`+this.state.query)
       .then(result=>result.json())
       .then((result)=>{
         for(let line in result) {
@@ -228,10 +230,10 @@ class TVShowQuery extends Component {
 
   handleAddShow(id) {
 //    const id = show.id;
-    fetch(`http://api.tvmaze.com/shows/`+id+`?embed[]=cast&embed[]=episodes`)
+    fetch(`https://api.tvmaze.com/shows/`+id+`?embed[]=cast&embed[]=episodes`)
       .then(result=>result.json())
       .then((result)=>{
-        console.log(result);
+        //console.log(result);
         const cast = result._embedded.cast;
         for(let i = 0; i< cast.length;++i){
           this.personne.add(cast[i].person);
@@ -288,34 +290,27 @@ class TVShowQuery extends Component {
   render() {
     return (
 <Container>
-  <h2>Extracteur de données sur les séries</h2>
-  <Row>
-  <Col sm={4}>
-      <Button variant="primary" block disabled={this.state.selection.length === 0}
+  <Navbar bg="dark" variant="dark">
+    <Navbar.Brand href="#home">Series2SQL</Navbar.Brand>
+    <Nav className="mr-auto">
+      <Nav.Link href="https://www.tvmaze.com/api">Données : TVMaze API</Nav.Link>
+      <Button variant="outline-info" disabled={this.state.selection.length === 0}
         onClick={this.downloadSQLFile}>
-        Exporter la sélection en SQL <Badge variant="light">{this.state.selection.length} séries</Badge>
-      </Button>
-  </Col>
-  <Col sm={8}>
-    <Form onSubmit={this.handleSubmit}  >
-      <InputGroup className="mb-3">
-      <InputGroup.Prepend>
-        <InputGroup.Text>Série</InputGroup.Text>
-      </InputGroup.Prepend>
-      <Form.Control type="text"
+        Exporter la sélection en SQL
+        </Button>
+    </Nav>
+    <Form inline onSubmit={this.handleSubmit}>
+      <FormControl type="text" placeholder="Nom de la série" className="mr-sm-2"
         value={this.state.query}
         onChange={this.handleChange} />
-      <InputGroup.Append>
-        <Button variant="primary" type="submit">Chercher</Button>
-      </InputGroup.Append>
-      </InputGroup>
+      <Button variant="outline-info" type="submit">Rechercher</Button>
     </Form>
-  </Col>
-  </Row>
+  </Navbar>
+  <div style={{marginTop:"1em"}} />
   <Tab.Container>
   <Row>
     <Col sm={4}>
-      <h4>Sélection</h4>
+      <h4>Sélection <Badge pill variant="info">{this.state.selection.length} séries</Badge></h4>
       <TVShowList list={this.state.selection} table={this.serie} onClick={this.handleRemoveShow}
                   textButton="Retirer"/>
     </Col>
@@ -330,7 +325,6 @@ class TVShowQuery extends Component {
     </Col>
   </Row>
   </Tab.Container>
-
 </Container>
     );
   }
