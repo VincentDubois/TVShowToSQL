@@ -315,14 +315,17 @@ class TVShowQuery extends Component {
   <Tab.Container>
   <Row>
     <Col sm={4}>
+      <h4>Sélection</h4>
       <TVShowList list={this.state.selection} table={this.serie} onClick={this.handleRemoveShow}
                   textButton="Retirer"/>
     </Col>
     <Col sm={4}>
+      <h4>Résultats de recherche</h4>
       <TVShowList list={this.state.found} table={this.serie} onClick={this.handleAddShow}
                   textButton="Ajouter"/>
     </Col>
     <Col sm={4}>
+      <h4>Détail de la sélection</h4>
       <TVShowSelected table={this.serie}/>
     </Col>
   </Row>
