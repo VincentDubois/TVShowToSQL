@@ -2,7 +2,6 @@ import React, { Component } from 'react';
 import Form from 'react-bootstrap/Form';
 import FormControl from 'react-bootstrap/FormControl';
 import Button from 'react-bootstrap/Button';
-import Container from 'react-bootstrap/Container'
 import ListGroup from 'react-bootstrap/ListGroup'
 import Tab from 'react-bootstrap/Tab'
 import Col from 'react-bootstrap/Col'
@@ -155,7 +154,8 @@ class TVShowList extends Component {
 class TVShowQuery extends Component {
   constructor(props) {
     super(props);
-    this.state = {query: '', found: null, selection: []};
+    this.state = {found: null, selection: []};
+    this.textInput = React.createRef();
 
     this.serie =  new Table("serie");
     this.serie.addField(new Field("id","int(11) NOT NULL","id"));
@@ -200,7 +200,6 @@ class TVShowQuery extends Component {
     this.episode.addField(new Field("url","varchar(255)","url"));
 
 
-    this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleRemoveShow = this.handleRemoveShow.bind(this);
     this.handleAddShow = this.handleAddShow.bind(this);
@@ -208,8 +207,9 @@ class TVShowQuery extends Component {
   }
 
   handleSubmit(event) {
+    const query = this.textInput.current.value;
 
-    fetch(`https://api.tvmaze.com/search/shows?q=`+this.state.query)
+    fetch(`https://api.tvmaze.com/search/shows?q=`+query)
       .then(result=>result.json())
       .then((result)=>{
         for(let line in result) {
@@ -218,10 +218,6 @@ class TVShowQuery extends Component {
         this.setState({found : result.map(line=>line.show.id)});
       });
     event.preventDefault();
-  }
-
-  handleChange(event) {
-    this.setState({query: event.target.value});
   }
 
   handleRemoveShow(id) {
@@ -289,7 +285,8 @@ class TVShowQuery extends Component {
 
   render() {
     return (
-<Container>
+  <Tab.Container>
+
   <Navbar bg="dark" variant="dark">
     <Navbar.Brand href="#home">Series2SQL</Navbar.Brand>
     <Nav className="mr-auto">
@@ -301,13 +298,12 @@ class TVShowQuery extends Component {
     </Nav>
     <Form inline onSubmit={this.handleSubmit}>
       <FormControl type="text" placeholder="Nom de la série" className="mr-sm-2"
-        value={this.state.query}
-        onChange={this.handleChange} />
+        ref={this.textInput}
+        autoFocus={true} />
       <Button variant="outline-info" type="submit">Rechercher</Button>
     </Form>
   </Navbar>
   <div style={{marginTop:"1em"}} />
-  <Tab.Container>
   <Row>
     <Col sm={4}>
       <h4>Sélection <Badge pill variant="info">{this.state.selection.length} séries</Badge></h4>
@@ -325,7 +321,6 @@ class TVShowQuery extends Component {
     </Col>
   </Row>
   </Tab.Container>
-</Container>
     );
   }
 }
