@@ -86,7 +86,6 @@ class Table {
 
 class TVShowMini extends Component {
   render() {
-    const onClick = ()=>this.props.onClick(this.props.show);
     const image = this.props.show.image ? (
       <Col sm="4">
         <Image src={this.props.show.image.medium} rounded fluid />
@@ -97,9 +96,7 @@ class TVShowMini extends Component {
         {image}
         <Col sm="8">
           <h3>{this.props.show.name}</h3>
-          <Button variant="secondary" onClick={onClick} size="lg">
-            Ajouter
-          </Button>
+          {this.props.children}
         </Col>
       </Row>
     )
@@ -121,33 +118,14 @@ class TVShow extends Component {
   );
   }
 }
-class TVShowListTabbed extends Component {
+class TVShowSelected extends Component {
   render(){
-    if (this.props.list){
       return (
-<Tab.Container>
-  <Row>
-    <Col sm={6} >
-      <ListGroup>{this.props.list.map((id) =>
-        <ListGroup.Item
-          key={id.toString()} action
-          href={"#"+id.toString()}>
-            <TVShowMini show={this.props.table.data[id]} onClick={this.props.onClick}/>
-        </ListGroup.Item>)}
-      </ListGroup>
-    </Col>
-    <Col sm={6}>
       <Tab.Content>{this.props.table.keys.map((id) =>
         <Tab.Pane eventKey={"#"+id.toString()} key={id.toString()}>
           <TVShow show={this.props.table.data[id]}/>
         </Tab.Pane>)}
-      </Tab.Content>
-    </Col>
-  </Row>
-</Tab.Container>);
-    } else {
-      return (<div>Pas de résultat</div>);
-    }
+      </Tab.Content>);
   }
 }
 class TVShowList extends Component {
@@ -157,7 +135,13 @@ class TVShowList extends Component {
         <ListGroup>{this.props.list.map((id) =>
           <ListGroup.Item key={id.toString()} action
                           href={"#"+id.toString()}>
-            <TVShowMini show={this.props.table.data[id]} onClick = {this.props.onClick}/>
+            <TVShowMini show={this.props.table.data[id]}>
+              <Button variant="secondary"
+                onClick={()=>this.props.onClick(id)}
+                size="lg">
+                {this.props.textButton}
+              </Button>
+            </TVShowMini>
           </ListGroup.Item>)}
         </ListGroup>)
     } else {
@@ -191,6 +175,7 @@ class TVShowQuery extends Component {
     this.personne.addField(new Field("id","int(11) NOT NULL","id"));
     this.personne.addField(new Field("nom","varchar(255) NOT NULL","name"));
     this.personne.addField(new Field("urlImage","varchar(255)","image.medium"));
+    this.personne.addField(new Field("url","varchar(255)","url"));
     this.personne.addField(new Field("naissance","date","birthday"));
     this.personne.addField(new Field("mort","date","deathday"));
     this.personne.addField(new Field("pays","varchar(255)","country.name"));
@@ -237,12 +222,12 @@ class TVShowQuery extends Component {
     this.setState({query: event.target.value});
   }
 
-  handleRemoveShow(show) {
-    this.setState({selection: this.state.selection.filter((elt) => (elt !== show.id))});
+  handleRemoveShow(id) {
+    this.setState({selection: this.state.selection.filter((elt) => (elt !== id))});
   }
 
-  handleAddShow(show) {
-    const id = show.id;
+  handleAddShow(id) {
+//    const id = show.id;
     fetch(`http://api.tvmaze.com/shows/`+id+`?embed[]=cast&embed[]=episodes`)
       .then(result=>result.json())
       .then((result)=>{
@@ -273,12 +258,15 @@ class TVShowQuery extends Component {
 
   downloadSQLFile() {
 
-    var result = this.serie.generateCreateStatement();
+    var result = "; Fichier généré avec les données de TVmaze, en CC-BY-SA. https://www.tvmaze.com/api \n";
+    result +="; Liste des séries incluses, par id :\n";
+    result +="; "+this.state.selection.join(",")+"\n\n\n";
+
+    result+=this.serie.generateCreateStatement();
     result+=this.personne.generateCreateStatement();
     result+=this.personnage.generateCreateStatement();
     result+=this.jouer.generateCreateStatement();
     result+=this.episode.generateCreateStatement();
-
 
     result+=this.serie.generateAllInsert(this.state.selection);
     result+=this.personne.generateAllInsert();
@@ -298,35 +286,48 @@ class TVShowQuery extends Component {
     }
 
   render() {
-    const found = this.state.found;
     return (
 <Container>
   <h2>Extracteur de données sur les séries</h2>
   <Row>
+  <Col sm={4}>
+      <Button variant="primary" block disabled={this.state.selection.length === 0}
+        onClick={this.downloadSQLFile}>
+        Exporter la sélection en SQL <Badge variant="light">{this.state.selection.length} séries</Badge>
+      </Button>
+  </Col>
+  <Col sm={8}>
+    <Form onSubmit={this.handleSubmit}  >
+      <InputGroup className="mb-3">
+      <InputGroup.Prepend>
+        <InputGroup.Text>Série</InputGroup.Text>
+      </InputGroup.Prepend>
+      <Form.Control type="text"
+        value={this.state.query}
+        onChange={this.handleChange} />
+      <InputGroup.Append>
+        <Button variant="primary" type="submit">Chercher</Button>
+      </InputGroup.Append>
+      </InputGroup>
+    </Form>
+  </Col>
+  </Row>
+  <Tab.Container>
+  <Row>
     <Col sm={4}>
-        <Button variant="primary" block disabled={this.state.selection.length === 0}
-          onClick={this.downloadSQLFile}>
-          Exporter la sélection en SQL <Badge variant="light">{this.state.selection.length} séries</Badge>
-        </Button>
-      <TVShowList list={this.state.selection} table={this.serie} onClick={this.handleRemoveShow}/>
+      <TVShowList list={this.state.selection} table={this.serie} onClick={this.handleRemoveShow}
+                  textButton="Retirer"/>
     </Col>
-    <Col sm={8}>
-      <Form onSubmit={this.handleSubmit}  >
-        <InputGroup className="mb-3">
-        <InputGroup.Prepend>
-          <InputGroup.Text>Série</InputGroup.Text>
-        </InputGroup.Prepend>
-        <Form.Control type="text"
-          value={this.state.query}
-          onChange={this.handleChange} />
-        <InputGroup.Append>
-          <Button variant="primary" type="submit">Chercher</Button>
-        </InputGroup.Append>
-        </InputGroup>
-      </Form>
-      <TVShowListTabbed list={found} table={this.serie} onClick={this.handleAddShow}/>
+    <Col sm={4}>
+      <TVShowList list={this.state.found} table={this.serie} onClick={this.handleAddShow}
+                  textButton="Ajouter"/>
+    </Col>
+    <Col sm={4}>
+      <TVShowSelected table={this.serie}/>
     </Col>
   </Row>
+  </Tab.Container>
+
 </Container>
     );
   }
