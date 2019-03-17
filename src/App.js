@@ -260,9 +260,9 @@ class TVShowQuery extends Component {
 
   downloadSQLFile() {
 
-    var result = "; Fichier généré avec les données de TVmaze, en CC-BY-SA. https://www.tvmaze.com/api \n";
-    result +="; Liste des séries incluses, par id :\n";
-    result +="; "+this.state.selection.join(",")+"\n\n\n";
+    var result = "# Fichier généré avec les données de TVmaze, en CC-BY-SA. https://www.tvmaze.com/api \n";
+    result +="# Liste des séries incluses, par id :\n";
+    result +="# "+this.state.selection.join(",")+"\n\n\n";
 
     result+=this.serie.generateCreateStatement();
     result+=this.personne.generateCreateStatement();
