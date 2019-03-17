@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/3.6.3/workbox-sw.js");
 
 importScripts(
-  "/TVShowToSQL/precache-manifest.896f040bba7f600689fc0da554ed248a.js"
+  "/TVShowToSQL/precache-manifest.0691fd88942d7d2c8f5987ccbb0e1db6.js"
 );
 
 workbox.clientsClaim();
