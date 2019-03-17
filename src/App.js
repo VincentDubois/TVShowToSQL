@@ -201,6 +201,17 @@ class TVShowQuery extends Component {
     this.jouer.addField(new Field("idPersonne","int(11) NOT NULL","idPersonne"));
     this.jouer.setKey("`idSerie`,`idPersonnage`,`idPersonne`");
 
+    this.episode = new Table("episode");
+    this.episode.addField(new Field("id","int(11) NOT NULL","id"));
+    this.episode.addField(new Field("nom","varchar(255) NOT NULL","name"));
+    this.episode.addField(new Field("idSerie","int(11) NOT NULL","idSerie"));
+    this.episode.addField(new Field("resume","text","summary"));
+    this.episode.addField(new Field("numero","int(11)","number"));
+    this.episode.addField(new Field("saison","int(11)","season"));
+    this.episode.addField(new Field("premiere","date","airdate"));
+    this.episode.addField(new Field("urlImage","varchar(255)","image.medium"));
+    this.episode.addField(new Field("url","varchar(255)","url"));
+
 
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
@@ -232,19 +243,26 @@ class TVShowQuery extends Component {
 
   handleAddShow(show) {
     const id = show.id;
-    fetch(`http://api.tvmaze.com/shows/`+id+`/cast`)
+    fetch(`http://api.tvmaze.com/shows/`+id+`?embed[]=cast&embed[]=episodes`)
       .then(result=>result.json())
       .then((result)=>{
-        for(var i = 0; i< result.length;++i){
-          this.personne.add(result[i].person);
-          this.personnage.add(result[i].character);
+        console.log(result);
+        const cast = result._embedded.cast;
+        for(let i = 0; i< cast.length;++i){
+          this.personne.add(cast[i].person);
+          this.personnage.add(cast[i].character);
 
-          const personneId = result[i].person.id;
-          const personnageId = result[i].character.id;
+          const personneId = cast[i].person.id;
+          const personnageId = cast[i].character.id;
           this.jouer.add({id:id+"/"+personneId+"/"+personnageId,
             idSerie:id,
             idPersonnage:personnageId,
             idPersonne:personneId});
+        }
+        const episodes = result._embedded.episodes;
+        for(let i = 0; i< episodes.length;++i){
+          episodes[i].idSerie = id;
+          this.episode.add(episodes[i]);
         }
         this.setState((oldState) => { return {
                       selection: oldState.selection.concat([id]),
@@ -259,11 +277,15 @@ class TVShowQuery extends Component {
     result+=this.personne.generateCreateStatement();
     result+=this.personnage.generateCreateStatement();
     result+=this.jouer.generateCreateStatement();
+    result+=this.episode.generateCreateStatement();
+
 
     result+=this.serie.generateAllInsert(this.state.selection);
     result+=this.personne.generateAllInsert();
     result+=this.personnage.generateAllInsert();
     result+=this.jouer.generateAllInsert();
+    result+=this.episode.generateAllInsert();
+
 
     console.log(result);
 
