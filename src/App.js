@@ -154,7 +154,7 @@ class TVShowList extends Component {
 class TVShowQuery extends Component {
   constructor(props) {
     super(props);
-    this.state = {found: null, selection: []};
+    this.state = {found: [], selection: []};
     this.textInput = React.createRef();
 
     this.serie =  new Table("serie");
@@ -206,12 +206,18 @@ class TVShowQuery extends Component {
     this.downloadSQLFile = this.downloadSQLFile.bind(this);
   }
 
+
+
   handleSubmit(event) {
     const query = this.textInput.current.value;
 
-
-
-
+    if (query.startsWith("#")){// si la requète commence par # on extrait les ids
+      const ids=query.slice(1,query.length).replace(/\s+/g, '').split(",");
+      // ex : # 1,2,3    donne [1,2,3]
+      for(let i=0; i< ids.length; ++i){
+        this.handleAddShow(ids[i]);
+      }
+    } else {
     fetch(`https://api.tvmaze.com/search/shows?q=`+query)
       .then(result=>result.json())
       .then((result)=>{
@@ -221,6 +227,7 @@ class TVShowQuery extends Component {
         this.setState({found : result.map(line=>line.show.id)});
       });
     event.preventDefault();
+    }
   }
 
   handleRemoveShow(id) {
@@ -232,7 +239,7 @@ class TVShowQuery extends Component {
     fetch(`https://api.tvmaze.com/shows/`+id+`?embed[]=cast&embed[]=episodes`)
       .then(result=>result.json())
       .then((result)=>{
-        //console.log(result);
+        console.log(result);
         this.serie.add(result);
         const cast = result._embedded.cast;
         for(let i = 0; i< cast.length;++i){
