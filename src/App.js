@@ -215,7 +215,7 @@ class TVShowQuery extends Component {
       const ids=query.slice(1,query.length).replace(/\s+/g, '').split(",");
       // ex : # 1,2,3    donne [1,2,3]
       for(let i=0; i< ids.length; ++i){
-        this.handleAddShow(ids[i]);
+        this.handleAddShow(parseInt(ids[i]));
       }
     } else {
     fetch(`https://api.tvmaze.com/search/shows?q=`+query)
@@ -236,36 +236,38 @@ class TVShowQuery extends Component {
 
   handleAddShow(id) {
 //    const id = show.id;
-    fetch(`https://api.tvmaze.com/shows/`+id+`?embed[]=cast&embed[]=episodes`)
-      .then(result=>result.json())
-      .then((result)=>{
-        console.log(result);
-        this.serie.add(result);
-        const cast = result._embedded.cast;
-        for(let i = 0; i< cast.length;++i){
-          this.personne.add(cast[i].person);
-          this.personnage.add(cast[i].character);
+    if (!this.state.selection.includes(id)){
+      fetch(`https://api.tvmaze.com/shows/`+id+`?embed[]=cast&embed[]=episodes`)
+        .then(result=>result.json())
+        .then((result)=>{
+          console.log(result);
+          this.serie.add(result);
+          const cast = result._embedded.cast;
+          for(let i = 0; i< cast.length;++i){
+            this.personne.add(cast[i].person);
+            this.personnage.add(cast[i].character);
 
-          const personneId = cast[i].person.id;
-          const personnageId = cast[i].character.id;
-          this.jouer.add({id:id+"/"+personneId+"/"+personnageId,
-            idSerie:id,
-            idPersonnage:personnageId,
-            idPersonne:personneId});
-        }
-        const episodes = result._embedded.episodes;
-        for(let i = 0; i< episodes.length;++i){
-          episodes[i].idSerie = id;
-          this.episode.add(episodes[i]);
-        }
-        this.setState((oldState) => {
-                    const newSelection = oldState.selection.includes(id) ?
-                          oldState.selection : [id].concat(oldState.selection);
-                    return {
-                      selection: newSelection,
-                      found: oldState.found.filter((elt) => (elt !== id))
-                    }});
-      });
+            const personneId = cast[i].person.id;
+            const personnageId = cast[i].character.id;
+            this.jouer.add({id:id+"/"+personneId+"/"+personnageId,
+              idSerie:id,
+              idPersonnage:personnageId,
+              idPersonne:personneId});
+          }
+          const episodes = result._embedded.episodes;
+          for(let i = 0; i< episodes.length;++i){
+            episodes[i].idSerie = id;
+            this.episode.add(episodes[i]);
+          }
+          this.setState((oldState) => {
+                      const newSelection = oldState.selection.includes(id) ?
+                            oldState.selection : [id].concat(oldState.selection);
+                      return {
+                        selection: newSelection,
+                        found: oldState.found.filter((elt) => (elt !== id))
+                      }});
+          });
+    }
   }
 
   downloadSQLFile() {
