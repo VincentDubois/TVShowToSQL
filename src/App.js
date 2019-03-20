@@ -209,6 +209,9 @@ class TVShowQuery extends Component {
   handleSubmit(event) {
     const query = this.textInput.current.value;
 
+
+
+
     fetch(`https://api.tvmaze.com/search/shows?q=`+query)
       .then(result=>result.json())
       .then((result)=>{
@@ -230,6 +233,7 @@ class TVShowQuery extends Component {
       .then(result=>result.json())
       .then((result)=>{
         //console.log(result);
+        this.serie.add(result);
         const cast = result._embedded.cast;
         for(let i = 0; i< cast.length;++i){
           this.personne.add(cast[i].person);
@@ -247,8 +251,11 @@ class TVShowQuery extends Component {
           episodes[i].idSerie = id;
           this.episode.add(episodes[i]);
         }
-        this.setState((oldState) => { return {
-                      selection: [id].concat(oldState.selection),
+        this.setState((oldState) => {
+                    const newSelection = oldState.selection.includes(id) ?
+                          oldState.selection : [id].concat(oldState.selection);
+                    return {
+                      selection: newSelection,
                       found: oldState.found.filter((elt) => (elt !== id))
                     }});
       });
