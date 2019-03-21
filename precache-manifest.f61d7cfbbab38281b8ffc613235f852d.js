@@ -8,15 +8,15 @@ self.__precacheManifest = [
     "url": "/TVShowToSQL/static/js/runtime~main.a1bccd0c.js"
   },
   {
-    "revision": "3edaff4f82c3ce4c13bb",
-    "url": "/TVShowToSQL/static/js/main.07265d2f.chunk.js"
+    "revision": "78fc79f9a894fe83e1bd",
+    "url": "/TVShowToSQL/static/js/main.36ce610e.chunk.js"
   },
   {
     "revision": "3433a667eaf8cb24b5a6",
     "url": "/TVShowToSQL/static/js/2.0ebc10b9.chunk.js"
   },
   {
-    "revision": "3edaff4f82c3ce4c13bb",
+    "revision": "78fc79f9a894fe83e1bd",
     "url": "/TVShowToSQL/static/css/main.f1c0d644.chunk.css"
   },
   {
@@ -24,7 +24,7 @@ self.__precacheManifest = [
     "url": "/TVShowToSQL/static/css/2.2f50a11d.chunk.css"
   },
   {
-    "revision": "bb3d348d55bf68c6fa6cab6807f93792",
+    "revision": "94d2147fe7a54ad5a6e41dcee588fcac",
     "url": "/TVShowToSQL/index.html"
   }
 ];
