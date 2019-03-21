@@ -44,10 +44,12 @@ class Table {
     this.data = {};
     this.fields = [];
     this.key="`id`";
+    this.link= {};
   }
 
-  addField(field){
+  addField(field, linkToTable = null){
     this.fields.push(field);
+    if (linkToTable) this.link[field.name] = linkToTable;
   }
 
   setKey(key){
@@ -71,12 +73,17 @@ class Table {
     if (subset == null) subset = this.keys; // si pas précisé, on garde tout
     if (!subset.length) return ""; //pas de données, pas de requête...
 
-    var result = "INSERT INTO "+this.name+" VALUES ("; // On créé une seule requête
-    result += subset.map((id)=>{ // On associe à chaque id le nuplet correspondant
+    const insertInto = "INSERT INTO "+this.name+" VALUES\n";
+    var result = "";
+    const data = subset.map((id)=>{ // On associe à chaque id le nuplet correspondant
       const elt = this.data[id]; // en regroupant tous les champs
       return "("+this.fields.map((field)=>field.getValue(elt)).join()+")"
-    }).join(",\n"); // et on joint le tout, un par ligne et séparés par des ,
-    result += ");\n\n";
+    });
+    for(let i=0; i<data.length; i++){
+      if (i%100===0) result += insertInto;
+      result += data[i] + ((i<data.length-1 && i%100 < 99) ? ",\n" : ";\n");
+    }
+    result += "\n";
     return result;
   }
 
@@ -85,9 +92,23 @@ class Table {
     this.fields.forEach(field=>{
       result += "`"+field.name+"` "+field.type+",\n";
     });
-    result += "PRIMARY KEY ("+this.key+")\n";
-    result += ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n";
-  return result;
+    result += "PRIMARY KEY ("+this.key+")";
+    for(let key in this.link) result += ",\nKEY (`"+key+"`)";
+    result += "\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n";
+    return result;
+  }
+
+  generateConstraintStatement(){
+    var result = "ALTER TABLE `"+this.name+"`\n";
+    var constraint = Object.keys(this.link).map((key,i)=>{
+      return "    ADD CONSTRAINT `"+this.name+"_ibfk_"+(i+1)+
+            "` FOREIGN KEY (`"+key+"`) REFERENCES `"+
+            this.link[key].name+"` (`id`)";
+    })
+    if (!constraint) return "";
+    result += constraint.join(",\n") + ";\n\n";
+
+    return result;
   }
 }
 
@@ -189,15 +210,15 @@ class TVShowQuery extends Component {
     this.personne.addField(new Field("pays","varchar(255)","country.name"));
 
     this.jouer = new Table("jouer");
-    this.jouer.addField(new Field("idSerie","int(11) NOT NULL","idSerie"));
-    this.jouer.addField(new Field("idPersonnage","int(11) NOT NULL","idPersonnage"));
-    this.jouer.addField(new Field("idPersonne","int(11) NOT NULL","idPersonne"));
+    this.jouer.addField(new Field("idSerie","int(11) NOT NULL","idSerie"), this.serie);
+    this.jouer.addField(new Field("idPersonnage","int(11) NOT NULL","idPersonnage"), this.personnage);
+    this.jouer.addField(new Field("idPersonne","int(11) NOT NULL","idPersonne"), this.personne);
     this.jouer.setKey("`idSerie`,`idPersonnage`,`idPersonne`");
 
     this.episode = new Table("episode");
     this.episode.addField(new Field("id","int(11) NOT NULL","id"));
     this.episode.addField(new Field("nom","varchar(255) NOT NULL","name"));
-    this.episode.addField(new Field("idSerie","int(11) NOT NULL","idSerie"));
+    this.episode.addField(new Field("idSerie","int(11) NOT NULL","idSerie"), this.serie);
     this.episode.addField(new Field("resume","text","summary"));
     this.episode.addField(new Field("numero","int(11)","number"));
     this.episode.addField(new Field("saison","int(11)","season"));
@@ -206,8 +227,8 @@ class TVShowQuery extends Component {
     this.episode.addField(new Field("url","varchar(255)","url"));
 
     this.poste = new Table("poste");
-    this.poste.addField(new Field("idSerie","int(11) NOT NULL","idSerie"));
-    this.poste.addField(new Field("idPersonne","int(11) NOT NULL","idPersonne"));
+    this.poste.addField(new Field("idSerie","int(11) NOT NULL","idSerie"),this.serie);
+    this.poste.addField(new Field("idPersonne","int(11) NOT NULL","idPersonne"),this.personne);
     this.poste.addField(new Field("titre","varchar(100) NOT NULL","titre"));
     this.poste.setKey("`idSerie`,`idPersonne`,`titre`");
 
@@ -316,6 +337,11 @@ class TVShowQuery extends Component {
     result+=this.jouer.generateAllInsert();
     result+=this.episode.generateAllInsert();
     result+=this.poste.generateAllInsert();
+
+    result+=this.jouer.generateConstraintStatement();
+    result+=this.episode.generateConstraintStatement();
+    result+=this.poste.generateConstraintStatement();
+
 
     console.log(result);
 
