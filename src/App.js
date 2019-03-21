@@ -199,6 +199,13 @@ class TVShowQuery extends Component {
     this.episode.addField(new Field("urlImage","varchar(255)","image.medium"));
     this.episode.addField(new Field("url","varchar(255)","url"));
 
+    this.poste = new Table("poste");
+    this.poste.addField(new Field("idSerie","int(11) NOT NULL","idSerie"));
+    this.poste.addField(new Field("idPersonne","int(11) NOT NULL","idPersonne"));
+    this.poste.addField(new Field("titre","varchar(100) NOT NULL","titre"));
+    this.poste.setKey("`idSerie`,`idPersonne`,`titre`");
+
+
 
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleRemoveShow = this.handleRemoveShow.bind(this);
@@ -237,16 +244,17 @@ class TVShowQuery extends Component {
   handleAddShow(id) {
 //    const id = show.id;
     if (!this.state.selection.includes(id)){
-      fetch(`https://api.tvmaze.com/shows/`+id+`?embed[]=cast&embed[]=episodes`)
+      fetch(`https://api.tvmaze.com/shows/`+id+
+            `?embed[]=cast&embed[]=crew&embed[]=episodes`)
         .then(result=>result.json())
         .then((result)=>{
           console.log(result);
           this.serie.add(result);
+
           const cast = result._embedded.cast;
           for(let i = 0; i< cast.length;++i){
             this.personne.add(cast[i].person);
             this.personnage.add(cast[i].character);
-
             const personneId = cast[i].person.id;
             const personnageId = cast[i].character.id;
             this.jouer.add({id:id+"/"+personneId+"/"+personnageId,
@@ -254,11 +262,24 @@ class TVShowQuery extends Component {
               idPersonnage:personnageId,
               idPersonne:personneId});
           }
+
+          const crew = result._embedded.crew;
+          for(let i = 0; i< crew.length;++i){
+            this.personne.add(crew[i].person);
+            const personneId = crew[i].person.id;
+            const titre = crew[i].type;
+            this.poste.add({id:id+"/"+personneId+"/titre",
+              idSerie:id,
+              idPersonne:personneId,
+              titre:titre});
+          }
+
           const episodes = result._embedded.episodes;
           for(let i = 0; i< episodes.length;++i){
             episodes[i].idSerie = id;
             this.episode.add(episodes[i]);
           }
+
           this.setState((oldState) => {
                       const newSelection = oldState.selection.includes(id) ?
                             oldState.selection : [id].concat(oldState.selection);
@@ -281,13 +302,14 @@ class TVShowQuery extends Component {
     result+=this.personnage.generateCreateStatement();
     result+=this.jouer.generateCreateStatement();
     result+=this.episode.generateCreateStatement();
+    result+=this.poste.generateCreateStatement();
 
     result+=this.serie.generateAllInsert(this.state.selection);
     result+=this.personne.generateAllInsert();
     result+=this.personnage.generateAllInsert();
     result+=this.jouer.generateAllInsert();
     result+=this.episode.generateAllInsert();
-
+    result+=this.poste.generateAllInsert();
 
     console.log(result);
 
