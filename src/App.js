@@ -67,10 +67,16 @@ class Table {
     return "INSERT INTO "+this.name+" VALUES ("+t.join()+");\n";
   }
 
-  generateAllInsert(subset = null){
-    var result = "";
-    if (subset == null) subset = this.keys;
-    subset.forEach((key)=>{result += this.generateInsert(this.data[key])});
+  generateAllInsert(subset = null){// subset : la liste des ids que l'on garde
+    if (subset == null) subset = this.keys; // si pas précisé, on garde tout
+    if (!subset.length) return ""; //pas de données, pas de requête...
+
+    var result = "INSERT INTO "+this.name+" VALUES ("; // On créé une seule requête
+    result += subset.map((id)=>{ // On associe à chaque id le nuplet correspondant
+      const elt = this.data[id]; // en regroupant tous les champs
+      return "("+this.fields.map((field)=>field.getValue(elt)).join()+")"
+    }).join(",\n"); // et on joint le tout, un par ligne et séparés par des ,
+    result += ");\n\n";
     return result;
   }
 
