@@ -39,12 +39,12 @@ class Field {
 
 class Table {
   constructor(name){
-    this.keys = [];
-    this.name = name;
-    this.data = {};
-    this.fields = [];
-    this.key="`id`";
-    this.link= {};
+    this.name = name; // nom de la table
+    this.keys = []; // id des éléments de la table
+    this.data = {}; // {id:ligne}
+    this.fields = []; // liste des champs
+    this.key="`id`"; // clef primaire à déclarer en SQL
+    this.link= {}; // clefs étrangères {nom_du_champ: table}
   }
 
   addField(field, linkToTable = null){
@@ -61,6 +61,23 @@ class Table {
       this.data[data.id]=data;
       this.keys.push(data.id);
     }
+  }
+
+  forEach(f){
+    this.keys.forEach((key)=>{f(this.data[key]);});
+  }
+
+  filter(condition){
+    let toKeep = [];
+    let toRemove = [];
+
+    this.keys.forEach((key)=>{
+      if (condition(this.data[key])) toKeep.push(key);
+      else toRemove.push(key);
+    });
+
+    this.keys = toKeep;
+    toRemove.forEach((key)=>{delete this.data[key];});
   }
 
 
@@ -318,7 +335,27 @@ class TVShowQuery extends Component {
     }
   }
 
+  removeUnused(){
+    this.episode.filter(episode=>this.state.selection.includes(episode.idSerie)||
+                                  this.state.found.includes(episode.idSerie));
+    this.jouer.filter(jouer=>this.state.selection.includes(jouer.idSerie));
+    this.poste.filter(poste=>this.state.selection.includes(poste.idSerie));
+    var personneToKeep = {};
+    var personnageToKeep = {};
+    this.jouer.forEach((jouer)=>{
+      personnageToKeep[jouer.idPersonnage] =true;
+      personneToKeep[jouer.idPersonne] = true;
+    });
+    this.jouer.forEach((pose)=>{
+      personneToKeep[pose.idPersonne] = true;
+    });
+    console.log(personneToKeep);
+    this.personnage.filter(personnage=>personnageToKeep[personnage.id]);
+    this.personne.filter(personne=>personneToKeep[personne.id]);
+  }
+
   downloadSQLFile() {
+    this.removeUnused();
 
     var result = "# Fichier généré avec les données de TVmaze, en CC-BY-SA. https://www.tvmaze.com/api \n";
     result +="# Liste des séries incluses, par id :\n";
