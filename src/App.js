@@ -90,7 +90,7 @@ class Table {
     if (subset == null) subset = this.keys; // si pas précisé, on garde tout
     if (!subset.length) return ""; //pas de données, pas de requête...
 
-    const insertInto = "INSERT INTO "+this.name+" VALUES\n";
+    const insertInto = "REPLACE INTO "+this.name+" VALUES\n";
     var result = "";
     const data = subset.map((id)=>{ // On associe à chaque id le nuplet correspondant
       const elt = this.data[id]; // en regroupant tous les champs
@@ -111,19 +111,20 @@ class Table {
     });
     result += "PRIMARY KEY ("+this.key+")";
     for(let key in this.link) result += ",\nKEY (`"+key+"`)";
+    result += this.generateConstraintStatement();
     result += "\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n";
     return result;
   }
 
   generateConstraintStatement(){
-    var result = "ALTER TABLE `"+this.name+"`\n";
+    var result = "";
     var constraint = Object.keys(this.link).map((key,i)=>{
-      return "    ADD CONSTRAINT `"+this.name+"_ibfk_"+(i+1)+
+      return "CONSTRAINT `"+this.name+"_ibfk_"+(i+1)+
             "` FOREIGN KEY (`"+key+"`) REFERENCES `"+
             this.link[key].name+"` (`id`)";
     })
-    if (!constraint) return "";
-    result += constraint.join(",\n") + ";\n\n";
+    if (constraint.length <1) return "";
+    result += ",\n"+constraint.join(",\n");
 
     return result;
   }
@@ -346,10 +347,9 @@ class TVShowQuery extends Component {
       personnageToKeep[jouer.idPersonnage] =true;
       personneToKeep[jouer.idPersonne] = true;
     });
-    this.jouer.forEach((pose)=>{
-      personneToKeep[pose.idPersonne] = true;
+    this.poste.forEach((poste)=>{
+      personneToKeep[poste.idPersonne] = true;
     });
-    console.log(personneToKeep);
     this.personnage.filter(personnage=>personnageToKeep[personnage.id]);
     this.personne.filter(personne=>personneToKeep[personne.id]);
   }
@@ -368,6 +368,9 @@ class TVShowQuery extends Component {
     result+=this.episode.generateCreateStatement();
     result+=this.poste.generateCreateStatement();
 
+    // On désactive les vérifications de clefs étrangères pour utiliser REPLACE
+    result +="SET foreign_key_checks = 0;\n\n";
+
     result+=this.serie.generateAllInsert(this.state.selection);
     result+=this.personne.generateAllInsert();
     result+=this.personnage.generateAllInsert();
@@ -375,10 +378,8 @@ class TVShowQuery extends Component {
     result+=this.episode.generateAllInsert();
     result+=this.poste.generateAllInsert();
 
-    result+=this.jouer.generateConstraintStatement();
-    result+=this.episode.generateConstraintStatement();
-    result+=this.poste.generateConstraintStatement();
-
+    // On réactive. Ou pas
+    //result +="SET foreign_key_checks = 1;\n";
 
     console.log(result);
 
