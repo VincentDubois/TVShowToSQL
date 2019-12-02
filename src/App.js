@@ -200,6 +200,10 @@ class TVShowQuery extends Component {
     this.episode.addField(new Field("urlImage","varchar(255)","image.medium"));
     this.episode.addField(new Field("url","varchar(255)","url"));
 
+    this.genre = new Table("genre");
+    this.genre.addField(new Field("id","int(11) NOT NULL","id"));
+    this.genre.addField(new Field("idSerie","int(11) NOT NULL","idSerie"));
+    this.genre.addField(new Field("nom","varchar(255) NOT NULL","name"));
 
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleRemoveShow = this.handleRemoveShow.bind(this);
@@ -248,6 +252,15 @@ class TVShowQuery extends Component {
           episodes[i].idSerie = id;
           this.episode.add(episodes[i]);
         }
+        const genres = result.genres;
+        for(let i = 0; i< genres.length;++i){
+          this.genre.add({id:id*10+i,
+            idSerie:id,
+            name:genres[i]});
+        }
+
+
+
         this.setState((oldState) => { return {
                       selection: [id].concat(oldState.selection),
                       found: oldState.found.filter((elt) => (elt !== id))
@@ -266,12 +279,14 @@ class TVShowQuery extends Component {
     result+=this.personnage.generateCreateStatement();
     result+=this.jouer.generateCreateStatement();
     result+=this.episode.generateCreateStatement();
+    result+=this.genre.generateCreateStatement();
 
     result+=this.serie.generateAllInsert(this.state.selection);
     result+=this.personne.generateAllInsert();
     result+=this.personnage.generateAllInsert();
     result+=this.jouer.generateAllInsert();
     result+=this.episode.generateAllInsert();
+    result+=this.genre.generateAllInsert();
 
 
     console.log(result);
