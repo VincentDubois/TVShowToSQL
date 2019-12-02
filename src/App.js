@@ -195,6 +195,7 @@ class TVShowQuery extends Component {
     this.episode.addField(new Field("resume","text","summary"));
     this.episode.addField(new Field("numero","int(11)","number"));
     this.episode.addField(new Field("saison","int(11)","season"));
+    this.episode.addField(new Field("duree","int(11)","runtime"));
     this.episode.addField(new Field("premiere","date","airdate"));
     this.episode.addField(new Field("urlImage","varchar(255)","image.medium"));
     this.episode.addField(new Field("url","varchar(255)","url"));
