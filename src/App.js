@@ -39,15 +39,17 @@ class Field {
 
 class Table {
   constructor(name){
-    this.keys = [];
-    this.name = name;
-    this.data = {};
-    this.fields = [];
-    this.key="`id`";
+    this.name = name; // nom de la table
+    this.keys = []; // id des éléments de la table
+    this.data = {}; // {id:ligne}
+    this.fields = []; // liste des champs
+    this.key="`id`"; // clef primaire à déclarer en SQL
+    this.link= {}; // clefs étrangères {nom_du_champ: table}
   }
 
-  addField(field){
+  addField(field, linkToTable = null){
     this.fields.push(field);
+    if (linkToTable) this.link[field.name] = linkToTable;
   }
 
   setKey(key){
@@ -61,16 +63,44 @@ class Table {
     }
   }
 
+  forEach(f){
+    this.keys.forEach((key)=>{f(this.data[key]);});
+  }
+
+  filter(condition){
+    let toKeep = [];
+    let toRemove = [];
+
+    this.keys.forEach((key)=>{
+      if (condition(this.data[key])) toKeep.push(key);
+      else toRemove.push(key);
+    });
+
+    this.keys = toKeep;
+    toRemove.forEach((key)=>{delete this.data[key];});
+  }
+
 
   generateInsert(elt){
     const t = this.fields.map((field)=>field.getValue(elt));
     return "INSERT INTO "+this.name+" VALUES ("+t.join()+");\n";
   }
 
-  generateAllInsert(subset = null){
+  generateAllInsert(subset = null){// subset : la liste des ids que l'on garde
+    if (subset == null) subset = this.keys; // si pas précisé, on garde tout
+    if (!subset.length) return ""; //pas de données, pas de requête...
+
+    const insertInto = "REPLACE INTO "+this.name+" VALUES\n";
     var result = "";
-    if (subset == null) subset = this.keys;
-    subset.forEach((key)=>{result += this.generateInsert(this.data[key])});
+    const data = subset.map((id)=>{ // On associe à chaque id le nuplet correspondant
+      const elt = this.data[id]; // en regroupant tous les champs
+      return "("+this.fields.map((field)=>field.getValue(elt)).join()+")"
+    });
+    for(let i=0; i<data.length; i++){
+      if (i%100===0) result += insertInto;
+      result += data[i] + ((i<data.length-1 && i%100 < 99) ? ",\n" : ";\n");
+    }
+    result += "\n";
     return result;
   }
 
@@ -79,9 +109,24 @@ class Table {
     this.fields.forEach(field=>{
       result += "`"+field.name+"` "+field.type+",\n";
     });
-    result += "PRIMARY KEY ("+this.key+")\n";
-    result += ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n";
-  return result;
+    result += "PRIMARY KEY ("+this.key+")";
+    for(let key in this.link) result += ",\nKEY (`"+key+"`)";
+    result += this.generateConstraintStatement();
+    result += "\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n";
+    return result;
+  }
+
+  generateConstraintStatement(){
+    var result = "";
+    var constraint = Object.keys(this.link).map((key,i)=>{
+      return "CONSTRAINT `"+this.name+"_ibfk_"+(i+1)+
+            "` FOREIGN KEY (`"+key+"`) REFERENCES `"+
+            this.link[key].name+"` (`id`)";
+    })
+    if (constraint.length <1) return "";
+    result += ",\n"+constraint.join(",\n");
+
+    return result;
   }
 }
 
@@ -154,7 +199,7 @@ class TVShowList extends Component {
 class TVShowQuery extends Component {
   constructor(props) {
     super(props);
-    this.state = {found: null, selection: []};
+    this.state = {found: [], selection: []};
     this.textInput = React.createRef();
 
     this.serie =  new Table("serie");
@@ -183,15 +228,15 @@ class TVShowQuery extends Component {
     this.personne.addField(new Field("pays","varchar(255)","country.name"));
 
     this.jouer = new Table("jouer");
-    this.jouer.addField(new Field("idSerie","int(11) NOT NULL","idSerie"));
-    this.jouer.addField(new Field("idPersonnage","int(11) NOT NULL","idPersonnage"));
-    this.jouer.addField(new Field("idPersonne","int(11) NOT NULL","idPersonne"));
+    this.jouer.addField(new Field("idSerie","int(11) NOT NULL","idSerie"), this.serie);
+    this.jouer.addField(new Field("idPersonnage","int(11) NOT NULL","idPersonnage"), this.personnage);
+    this.jouer.addField(new Field("idPersonne","int(11) NOT NULL","idPersonne"), this.personne);
     this.jouer.setKey("`idSerie`,`idPersonnage`,`idPersonne`");
 
     this.episode = new Table("episode");
     this.episode.addField(new Field("id","int(11) NOT NULL","id"));
     this.episode.addField(new Field("nom","varchar(255) NOT NULL","name"));
-    this.episode.addField(new Field("idSerie","int(11) NOT NULL","idSerie"));
+    this.episode.addField(new Field("idSerie","int(11) NOT NULL","idSerie"), this.serie);
     this.episode.addField(new Field("resume","text","summary"));
     this.episode.addField(new Field("numero","int(11)","number"));
     this.episode.addField(new Field("saison","int(11)","season"));
@@ -205,15 +250,31 @@ class TVShowQuery extends Component {
     this.genre.addField(new Field("idSerie","int(11) NOT NULL","idSerie"));
     this.genre.addField(new Field("nom","varchar(255) NOT NULL","name"));
 
+    this.poste = new Table("poste");
+    this.poste.addField(new Field("idSerie","int(11) NOT NULL","idSerie"),this.serie);
+    this.poste.addField(new Field("idPersonne","int(11) NOT NULL","idPersonne"),this.personne);
+    this.poste.addField(new Field("titre","varchar(100) NOT NULL","titre"));
+    this.poste.setKey("`idSerie`,`idPersonne`,`titre`");
+
+
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleRemoveShow = this.handleRemoveShow.bind(this);
     this.handleAddShow = this.handleAddShow.bind(this);
     this.downloadSQLFile = this.downloadSQLFile.bind(this);
   }
 
+
+
   handleSubmit(event) {
     const query = this.textInput.current.value;
 
+    if (query.startsWith("#")){// si la requète commence par # on extrait les ids
+      const ids=query.slice(1,query.length).replace(/\s+/g, '').split(",");
+      // ex : # 1,2,3    donne [1,2,3]
+      for(let i=0; i< ids.length; ++i){
+        this.handleAddShow(parseInt(ids[i]));
+      }
+    } else {
     fetch(`https://api.tvmaze.com/search/shows?q=`+query)
       .then(result=>result.json())
       .then((result)=>{
@@ -223,6 +284,7 @@ class TVShowQuery extends Component {
         this.setState({found : result.map(line=>line.show.id)});
       });
     event.preventDefault();
+    }
   }
 
   handleRemoveShow(id) {
@@ -231,44 +293,82 @@ class TVShowQuery extends Component {
 
   handleAddShow(id) {
 //    const id = show.id;
-    fetch(`https://api.tvmaze.com/shows/`+id+`?embed[]=cast&embed[]=episodes`)
-      .then(result=>result.json())
-      .then((result)=>{
-        //console.log(result);
-        const cast = result._embedded.cast;
-        for(let i = 0; i< cast.length;++i){
-          this.personne.add(cast[i].person);
-          this.personnage.add(cast[i].character);
+    if (!this.state.selection.includes(id)){
+      fetch(`https://api.tvmaze.com/shows/`+id+
+            `?embed[]=cast&embed[]=crew&embed[]=episodes`)
+        .then(result=>result.json())
+        .then((result)=>{
+          console.log(result);
+          this.serie.add(result);
 
-          const personneId = cast[i].person.id;
-          const personnageId = cast[i].character.id;
-          this.jouer.add({id:id+"/"+personneId+"/"+personnageId,
-            idSerie:id,
-            idPersonnage:personnageId,
-            idPersonne:personneId});
-        }
-        const episodes = result._embedded.episodes;
-        for(let i = 0; i< episodes.length;++i){
-          episodes[i].idSerie = id;
-          this.episode.add(episodes[i]);
-        }
-        const genres = result.genres;
-        for(let i = 0; i< genres.length;++i){
-          this.genre.add({id:id*10+i,
-            idSerie:id,
-            name:genres[i]});
-        }
+          const cast = result._embedded.cast;
+          for(let i = 0; i< cast.length;++i){
+            this.personne.add(cast[i].person);
+            this.personnage.add(cast[i].character);
+            const personneId = cast[i].person.id;
+            const personnageId = cast[i].character.id;
+            this.jouer.add({id:id+"/"+personneId+"/"+personnageId,
+              idSerie:id,
+              idPersonnage:personnageId,
+              idPersonne:personneId});
+          }
+
+          const crew = result._embedded.crew;
+          for(let i = 0; i< crew.length;++i){
+            this.personne.add(crew[i].person);
+            const personneId = crew[i].person.id;
+            const titre = crew[i].type;
+            this.poste.add({id:id+"/"+personneId+"/titre",
+              idSerie:id,
+              idPersonne:personneId,
+              titre:titre});
+          }
+
+          const episodes = result._embedded.episodes;
+          for(let i = 0; i< episodes.length;++i){
+            episodes[i].idSerie = id;
+            this.episode.add(episodes[i]);
+          }
+
+          const genres = result.genres;
+          for(let i = 0; i< genres.length;++i){
+            this.genre.add({id:id*10+i,
+              idSerie:id,
+              name:genres[i]});
+          }
 
 
+          this.setState((oldState) => {
+                      const newSelection = oldState.selection.includes(id) ?
+                            oldState.selection : [id].concat(oldState.selection);
+                      return {
+                        selection: newSelection,
+                        found: oldState.found.filter((elt) => (elt !== id))
+                      }});
+          });
+    }
+  }
 
-        this.setState((oldState) => { return {
-                      selection: [id].concat(oldState.selection),
-                      found: oldState.found.filter((elt) => (elt !== id))
-                    }});
-      });
+  removeUnused(){
+    this.episode.filter(episode=>this.state.selection.includes(episode.idSerie)||
+                                  this.state.found.includes(episode.idSerie));
+    this.jouer.filter(jouer=>this.state.selection.includes(jouer.idSerie));
+    this.poste.filter(poste=>this.state.selection.includes(poste.idSerie));
+    var personneToKeep = {};
+    var personnageToKeep = {};
+    this.jouer.forEach((jouer)=>{
+      personnageToKeep[jouer.idPersonnage] =true;
+      personneToKeep[jouer.idPersonne] = true;
+    });
+    this.poste.forEach((poste)=>{
+      personneToKeep[poste.idPersonne] = true;
+    });
+    this.personnage.filter(personnage=>personnageToKeep[personnage.id]);
+    this.personne.filter(personne=>personneToKeep[personne.id]);
   }
 
   downloadSQLFile() {
+    this.removeUnused();
 
     var result = "# Fichier généré avec les données de TVmaze, en CC-BY-SA. https://www.tvmaze.com/api \n";
     result +="# Liste des séries incluses, par id :\n";
@@ -280,6 +380,10 @@ class TVShowQuery extends Component {
     result+=this.jouer.generateCreateStatement();
     result+=this.episode.generateCreateStatement();
     result+=this.genre.generateCreateStatement();
+    result+=this.poste.generateCreateStatement();
+
+    // On désactive les vérifications de clefs étrangères pour utiliser REPLACE
+    result +="SET foreign_key_checks = 0;\n\n";
 
     result+=this.serie.generateAllInsert(this.state.selection);
     result+=this.personne.generateAllInsert();
@@ -287,7 +391,10 @@ class TVShowQuery extends Component {
     result+=this.jouer.generateAllInsert();
     result+=this.episode.generateAllInsert();
     result+=this.genre.generateAllInsert();
+    result+=this.poste.generateAllInsert();
 
+    // On réactive. Ou pas
+    //result +="SET foreign_key_checks = 1;\n";
 
     console.log(result);
 
