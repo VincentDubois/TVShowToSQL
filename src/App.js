@@ -15,6 +15,37 @@ import Nav from 'react-bootstrap/Nav'
 import logoSQL from './logoSQL.png';
 import './App.css';
 
+
+function mysql_real_escape_string (str) {
+  // eslint-disable-next-line
+  return str.replace(/[\0\x08\x09\x1a\n\r"'\\\%]/g, function (char) {
+      switch (char) {
+          case "\0":
+              return "\\0";
+          case "\x08":
+              return "\\b";
+          case "\x09":
+              return "\\t";
+          case "\x1a":
+              return "\\z";
+          case "\n":
+              return "\\n";
+          case "\r":
+              return "\\r";
+          case "\"":
+            return "&quote;";
+          case "'":
+            return "&apos;";
+          case "\\":
+          case "%":
+              return "\\"+char; // prepends a backslash to backslash, percent,
+                                // and double/single quotes
+          default:
+              return char;
+      }
+  });
+}
+
 class Field {
   constructor(name,type,key){
     this.name = name;
@@ -26,12 +57,13 @@ class Field {
   getValue(line){
     let result = line;
     for(let i= 0; i < this.key.length; ++i){
-        let resultV = result[this.key[i]];
-        if (resultV === null || typeof result === 'undefined') return "null";
+        result = result[this.key[i]];
+        if (result === null || typeof result === 'undefined') return "null";
     }
 
     result = String(result);
-    result = result.split("\"").join("\\\"");
+    result = mysql_real_escape_string(result);
+    //result = result.split("\"").join("\\\"");
     if (this.quote) return "\""+result+"\"";
     return result;
   }
@@ -272,7 +304,6 @@ class TVShowQuery extends Component {
     if (query.startsWith("#")){// si la requète commence par # on extrait les ids
       const ids=query.slice(1,query.length).replace(/\s+/g, '').split(",");
       // ex : # 1,2,3    donne [1,2,3]
-      const addShow = this.handleAddShow.bind(this);
       for(let i=0; i< ids.length; ++i){
         this.handleAddShow(parseInt(ids[i]));
       }
