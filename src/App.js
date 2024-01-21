@@ -10,7 +10,6 @@ import Badge from 'react-bootstrap/Badge'
 import Image from 'react-bootstrap/Image'
 import Navbar from 'react-bootstrap/Navbar'
 import Nav from 'react-bootstrap/Nav'
-import Container from 'react-bootstrap/Container';
 
 
 import logoSQL from './logoSQL.png';
@@ -27,8 +26,8 @@ class Field {
   getValue(line){
     let result = line;
     for(let i= 0; i < this.key.length; ++i){
-        result = result[this.key[i]];
-        if (result === null || typeof result === 'undefined') return "null";
+        let resultV = result[this.key[i]];
+        if (resultV === null || typeof result === 'undefined') return "null";
     }
 
     result = String(result);
@@ -258,10 +257,11 @@ class TVShowQuery extends Component {
     this.poste.setKey("`idSerie`,`idPersonne`,`titre`");
 
 
-    this.handleSubmit = this.handleSubmit.bind(this);
+    
     this.handleRemoveShow = this.handleRemoveShow.bind(this);
     this.handleAddShow = this.handleAddShow.bind(this);
     this.downloadSQLFile = this.downloadSQLFile.bind(this);
+    this.handleSubmit = this.handleSubmit.bind(this);
   }
 
 
@@ -272,9 +272,11 @@ class TVShowQuery extends Component {
     if (query.startsWith("#")){// si la requète commence par # on extrait les ids
       const ids=query.slice(1,query.length).replace(/\s+/g, '').split(",");
       // ex : # 1,2,3    donne [1,2,3]
+      const addShow = this.handleAddShow.bind(this);
       for(let i=0; i< ids.length; ++i){
         this.handleAddShow(parseInt(ids[i]));
       }
+      event.preventDefault();
     } else {
     fetch(`https://api.tvmaze.com/search/shows?q=`+query)
       .then(result=>result.json())
@@ -295,6 +297,7 @@ class TVShowQuery extends Component {
   handleAddShow(id) {
 //    const id = show.id;
     if (!this.state.selection.includes(id)){
+      console.log(id)
       fetch(`https://api.tvmaze.com/shows/`+id+
             `?embed[]=cast&embed[]=crew&embed[]=episodes`)
         .then(result=>result.json())
@@ -412,7 +415,7 @@ class TVShowQuery extends Component {
   <Tab.Container>
 
   <Navbar className="justify-content-between" bg="dark" data-bs-theme="dark" >
- <Nav inline>
+ <Nav >
   <Navbar.Brand href="#home">
     
     <img src={logoSQL} className="mx-3" width="30"  alt="Serie2SQL"/>
@@ -428,7 +431,7 @@ class TVShowQuery extends Component {
     </Nav.Item>
    
     </Nav>
-    <Form inline onSubmit={this.handleSubmit}>
+    <Form  onSubmit={this.handleSubmit}>
       <Row>
       <Col xs="auto">
         <Form.Control type="text" placeholder="Nom de la série" className="mr-sm-2"
