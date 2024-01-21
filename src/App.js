@@ -33,7 +33,7 @@ function mysql_real_escape_string (str) {
           case "\r":
               return "\\r";
           case "\"":
-            return "&quote;";
+            return "&quot;";
           case "'":
             return "&apos;";
           case "\\":
