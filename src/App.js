@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import Form from 'react-bootstrap/Form';
-import FormControl from 'react-bootstrap/FormControl';
 import Button from 'react-bootstrap/Button';
 import ListGroup from 'react-bootstrap/ListGroup'
 import Tab from 'react-bootstrap/Tab'
@@ -11,8 +10,10 @@ import Badge from 'react-bootstrap/Badge'
 import Image from 'react-bootstrap/Image'
 import Navbar from 'react-bootstrap/Navbar'
 import Nav from 'react-bootstrap/Nav'
+import Container from 'react-bootstrap/Container';
 
-import logo from './logo.svg';
+
+import logoSQL from './logoSQL.png';
 import './App.css';
 
 class Field {
@@ -410,23 +411,34 @@ class TVShowQuery extends Component {
     return (
   <Tab.Container>
 
-  <Navbar bg="dark" variant="dark">
-    <Navbar.Brand href="#home">
-    <img src={logo} width="45" height="45" className="d-inline-block align-top"
-          alt="Serie2SQL"/>
+  <Navbar className="justify-content-between" bg="dark" data-bs-theme="dark" >
+ <Nav inline>
+  <Navbar.Brand href="#home">
+    
+    <img src={logoSQL} className="mx-3" width="30"  alt="Serie2SQL"/>
     </Navbar.Brand>
-    <Nav className="mr-auto">
-      <Nav.Link href="https://www.tvmaze.com/api">Données : TVMaze API</Nav.Link>
+
+    <Nav.Link href="https://www.tvmaze.com/api">Données : TVMaze API</Nav.Link>
+
+    <Nav.Item className="mr-auto">
       <Button variant="outline-info" disabled={this.state.selection.length === 0}
         onClick={this.downloadSQLFile}>
         Exporter la sélection en SQL
         </Button>
+    </Nav.Item>
+   
     </Nav>
     <Form inline onSubmit={this.handleSubmit}>
-      <FormControl type="text" placeholder="Nom de la série" className="mr-sm-2"
-        ref={this.textInput}
-        autoFocus={true} />
-      <Button variant="outline-info" type="submit">Rechercher</Button>
+      <Row>
+      <Col xs="auto">
+        <Form.Control type="text" placeholder="Nom de la série" className="mr-sm-2"
+          ref={this.textInput}
+          autoFocus={true} />
+          </Col>
+          <Col xs="auto">
+        <Button variant="outline-info" type="submit">Rechercher</Button>
+        </Col>
+      </Row>
     </Form>
   </Navbar>
   <div style={{marginTop:"1em"}} />
