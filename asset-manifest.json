@@ -1,16 +1,14 @@
 {
-  "main.css": "/TVShowToSQL/static/css/main.f1c0d644.chunk.css",
-  "main.js": "/TVShowToSQL/static/js/main.dcdb7b49.chunk.js",
-  "main.js.map": "/TVShowToSQL/static/js/main.dcdb7b49.chunk.js.map",
-  "runtime~main.js": "/TVShowToSQL/static/js/runtime~main.a1bccd0c.js",
-  "runtime~main.js.map": "/TVShowToSQL/static/js/runtime~main.a1bccd0c.js.map",
-  "static/css/2.2f50a11d.chunk.css": "/TVShowToSQL/static/css/2.2f50a11d.chunk.css",
-  "static/js/2.0ebc10b9.chunk.js": "/TVShowToSQL/static/js/2.0ebc10b9.chunk.js",
-  "static/js/2.0ebc10b9.chunk.js.map": "/TVShowToSQL/static/js/2.0ebc10b9.chunk.js.map",
-  "index.html": "/TVShowToSQL/index.html",
-  "precache-manifest.00700329ec66784307efddbd67714316.js": "/TVShowToSQL/precache-manifest.00700329ec66784307efddbd67714316.js",
-  "service-worker.js": "/TVShowToSQL/service-worker.js",
-  "static/css/2.2f50a11d.chunk.css.map": "/TVShowToSQL/static/css/2.2f50a11d.chunk.css.map",
-  "static/css/main.f1c0d644.chunk.css.map": "/TVShowToSQL/static/css/main.f1c0d644.chunk.css.map",
-  "static/media/logo.svg": "/TVShowToSQL/static/media/logo.8f6daf1f.svg"
+  "files": {
+    "main.css": "/TVShowToSQL/static/css/main.f159f062.css",
+    "main.js": "/TVShowToSQL/static/js/main.4a8efb71.js",
+    "static/media/logoSQL.png": "/TVShowToSQL/static/media/logoSQL.d57bbb108370a1d73649.png",
+    "index.html": "/TVShowToSQL/index.html",
+    "main.f159f062.css.map": "/TVShowToSQL/static/css/main.f159f062.css.map",
+    "main.4a8efb71.js.map": "/TVShowToSQL/static/js/main.4a8efb71.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.f159f062.css",
+    "static/js/main.4a8efb71.js"
+  ]
 }
