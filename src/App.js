@@ -456,7 +456,7 @@ class TVShowQuery extends Component {
 
     <Nav.Link href="https://www.tvmaze.com/api">Données : TVMaze API</Nav.Link>
 
-    <Nav.Item className="mr-auto">
+    <Nav.Item className="mx-3">
       <Button variant="outline-info" disabled={this.state.selection.length === 0}
         onClick={this.downloadSQLFile}>
         Exporter la sélection en SQL
@@ -467,12 +467,12 @@ class TVShowQuery extends Component {
     <Form  onSubmit={this.handleSubmit}>
       <Row>
       <Col xs="auto">
-        <Form.Control type="text" placeholder="Nom de la série" className="mr-sm-2"
+        <Form.Control type="text" placeholder="Nom de la série" className="mx-3"
           ref={this.textInput}
           autoFocus={true} />
           </Col>
           <Col xs="auto">
-        <Button variant="outline-info" type="submit">Rechercher</Button>
+        <Button variant="outline-info" type="submit"  className="mx-3">Rechercher</Button>
         </Col>
       </Row>
     </Form>
