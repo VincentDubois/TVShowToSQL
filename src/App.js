@@ -62,6 +62,8 @@ class Field {
     }
 
     result = String(result);
+    if(result.length === 0) return "null";
+
     result = mysql_real_escape_string(result);
     //result = result.split("\"").join("\\\"");
     if (this.quote) return "\""+result+"\"";
